@@ -21,6 +21,6 @@ Apple의 Bonjour 프로토콜과 호환되며, `grandcat/zeroconf` 라이브러�
 
 ### 1. 설치
 ```bash
-git clone https://github.com/your-org/zeroconf-udp-broadcaster.git
-cd zeroconf-udp-broadcaster
+https://github.com/swlee3306/system-broadcast-agent.git
+cd system-broadcast-agent
 go mod tidy
