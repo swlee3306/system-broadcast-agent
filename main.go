@@ -59,11 +59,21 @@ func main() {
 			server, err := zeroconftest.RegisterZeroconfMultiIP(hostname)
 			if err != nil {
 				log.Println("Zeroconf 등록 실패:", err)
-			} else {
-				log.Println("Zeroconf 등록 완료")
+				time.Sleep(10 * time.Second)
+				continue
 			}
-			time.Sleep(60 * time.Second)
+			// 수정된 부분
+			zeroconftest.SetMulticastLoopback(server)
+
+			log.Println("Zeroconf 등록 완료")
+			// Announce 이후 전파 시간 확보
+			time.Sleep(10 * time.Second)
+
+			// 서버를 일정 시간 유지
+			time.Sleep(50 * time.Second)
+
 			server.Shutdown()
+			log.Println("Zeroconf 등록 종료")
 		}
 	}()
 

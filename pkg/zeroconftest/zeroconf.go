@@ -3,6 +3,7 @@ package zeroconftest
 import (
 	"context"
 	"encoding/json"
+	"log"
 	"net"
 	"net/http"
 	"strconv"
@@ -10,6 +11,7 @@ import (
 	"time"
 
 	"github.com/grandcat/zeroconf"
+	"golang.org/x/net/ipv4"
 )
 
 type AgentInfo struct {
@@ -18,6 +20,7 @@ type AgentInfo struct {
 }
 
 func RegisterZeroconfMultiIP(hostname string) (*zeroconf.Server, error) {
+	ifs, _ := net.Interfaces()
 	ips := GetAllUsableIPv4()
 	txt := []string{"hostname=" + hostname}
 	for _, ip := range ips {
@@ -30,7 +33,7 @@ func RegisterZeroconfMultiIP(hostname string) (*zeroconf.Server, error) {
 		"local.",
 		9999,
 		txt,
-		nil,
+		ifs,
 	)
 }
 
@@ -95,4 +98,32 @@ func GetAllUsableIPv4() []string {
 		}
 	}
 	return result
+}
+
+func SetMulticastLoopback(server *zeroconf.Server) {
+	ifaces, err := net.Interfaces()
+	if err != nil {
+		log.Printf("Failed to get interfaces: %v", err)
+		return
+	}
+	for _, iface := range ifaces {
+		if (iface.Flags&net.FlagUp) == 0 || (iface.Flags&net.FlagLoopback) != 0 {
+			continue
+		}
+		conn, err := net.ListenMulticastUDP("udp4", &iface, &net.UDPAddr{
+			IP:   net.ParseIP("224.0.0.251"),
+			Port: 5353,
+		})
+		if err != nil {
+			log.Printf("Failed to get multicast UDP conn for %s: %v", iface.Name, err)
+			continue
+		}
+		p := ipv4.NewPacketConn(conn)
+		if err := p.SetMulticastLoopback(true); err != nil {
+			log.Printf("Failed to set IP_MULTICAST_LOOP on %s: %v", iface.Name, err)
+		} else {
+			log.Printf("Enabled IP_MULTICAST_LOOP on %s", iface.Name)
+		}
+		conn.Close()
+	}
 }
